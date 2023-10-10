@@ -26,7 +26,7 @@ class Program
         B.edges.Add(BtoA);
 
         graph.AddNode(A);
-        graph.AddNode(B);
+        graph.AddNode(B);   
 
     }
 }
