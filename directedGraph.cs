@@ -119,7 +119,6 @@ class Graph
         source.openPathCandidates.Add(initialPath);
         openPaths.Add(initialPath);
 
-
         while (openPaths.Count > 0)
         {
             Path currentOpenPath = openPaths.Min;
@@ -207,7 +206,7 @@ public class Node
 
     // Look for possible dominated vectors, from worst to best, and remove them from a set of paths
     // Return true if new path dominates any current paths
-    public static bool RemoveDominatedPaths(SortedSet<Path> currentPaths, Path possibleDominatingPath)
+    public bool RemoveDominatedPaths(SortedSet<Path> currentPaths, Path possibleDominatingPath)
     {
         List<Path> pathsToRemove = new();
         int comparisonResult;
@@ -220,7 +219,7 @@ public class Node
             }
             else
             {
-                break; // If the new path is dominated by p, it will also be dominated by all better paths
+                break; // If the new path is dominated by or indifferent to p, it will also be dominated by or indifferent to all better paths
                        // so we can stop looking
             }
         }
@@ -279,11 +278,11 @@ public class Path : IComparable<Path>
 
     public int Dominates(Path p)
     {
-        if (totalCost.damage < p.totalCost.damage && totalCost.distance < p.totalCost.distance)
+        if (totalCost.damage <= p.totalCost.damage && totalCost.distance < p.totalCost.distance)
         {
             return -1;
         }
-        else if (totalCost.damage > p.totalCost.damage && totalCost.distance > p.totalCost.distance)
+        else if (totalCost.damage >= p.totalCost.damage && totalCost.distance > p.totalCost.distance)
         {
             return 1;
         }

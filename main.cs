@@ -24,7 +24,7 @@ class Program
         Console.WriteLine(source.openPathCandidates.Min);
         Console.WriteLine(target.openPathCandidates.Min);
 
-        Console.WriteLine("\nPrinting shortest Path from A to B");
+        Console.WriteLine("\nPrinting shortest Path from source to target");
         List<Path> shortestPath = Graph.BacktrackShortestPath(source, target, new(), 10);
         foreach (Path p in shortestPath)
         {
