@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Reflection.Emit;
 
 class Graph
 {
-
-    Graph solutionGraph = new();
 
     HashSet<Node> nodes;
 
@@ -60,39 +60,72 @@ class Graph
 
     public class Edge
     {
-        public (int, int) cost;
+        public Cost cost;
         public Node source;
         public Node target;
     }
 
+    // Cost of a Path or an Edge
+    public class Cost : IComparable<Cost>
+    {
+        public int damage;
+        public int distance;
+
+        // Lexicographic ordering
+        public int CompareTo(Cost c)
+        {
+            if (damage < c.damage)
+            {
+                return -1;
+            }
+            else
+            {
+                return distance.CompareTo(c.distance);
+            }
+        }
+
+        public static Cost Add(Cost a, Cost b)
+        {
+            return new()
+            {
+                damage = a.damage + b.damage,
+                distance = a.distance + b.distance
+            };
+        }
+    }
+
     public class Path : IComparable<Path>
     {
-        public (int, int) cost;
+        public Cost cost;
         public Node head;
         public Node previous;
 
         public bool Dominates(Path p)
         {
-            return cost.Item1 <= p.cost.Item1 && cost.Item2 <= p.cost.Item2;
+            return cost.damage <= p.cost.damage && cost.distance <= p.cost.distance;
         }
 
         // Lexicographic ordering
         public int CompareTo(Path p)
         {
-            int result = cost.Item1.CompareTo(cost.Item1);
-            return result != 0 ? result : cost.Item2.CompareTo(cost.Item2);
+            return cost.CompareTo(p.cost);
         }
+
     }
 
 
     //NAMOA* algorithm
-    public Path shortestPath(Node source, Node target, int distance)
+    public Path ShortestPathToAllNodes(Node source, int distance)
     {
 
         //Initialize 
-        Path initialPath = new Path
+        Path initialPath = new()
         {
-            cost = (0, 0),
+            cost = new()
+            {
+                damage = 0,
+                distance = 0
+            },
             head = source
         };
         openPaths.Add(initialPath);
@@ -107,7 +140,7 @@ class Graph
                 Node currentTarget = e.target;
                 Path pathToTarget = new()
                 {
-                    cost = (currentOpenPath.cost.Item1 + e.cost.Item1, currentOpenPath.cost.Item2 + e.cost.Item2)
+                    cost = Cost.Add(currentOpenPath.cost, e.cost),
                     head = currentTarget,
                     previous = currentOpenPath.head
                 };
