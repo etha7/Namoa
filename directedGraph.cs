@@ -100,15 +100,18 @@ class Graph
 
         while (openPaths.Count > 0)
         {
-            Path currentSource = openPaths.Min;
-            openPaths.Remove(currentSource);
-            foreach (Edge e in currentSource.head.edges)
+            Path currentOpenPath = openPaths.Min;
+            openPaths.Remove(currentOpenPath);
+            foreach (Edge e in currentOpenPath.head.edges)
             {
                 Node currentTarget = e.target;
-                foreach (Path p in currentTarget.openPathCandidates)
+                Path pathToTarget = new()
                 {
-
-                }
+                    cost = (currentOpenPath.cost.Item1 + e.cost.Item1, currentOpenPath.cost.Item2 + e.cost.Item2)
+                    head = currentTarget,
+                    previous = currentOpenPath.head
+                };
+                currentTarget.RemoveDominatedPaths(pathToTarget);
             }
 
         }
