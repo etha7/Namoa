@@ -11,7 +11,7 @@ class Program
         Graph.Node B = new();
         Graph.Edge AtoB = new()
         {
-            costs = new System.Collections.Generic.List<int> { 1, 1 },
+            cost = (1, 1),
             source = A,
             target = B
         };
@@ -19,7 +19,7 @@ class Program
 
         Graph.Edge BtoA = new()
         {
-            costs = new System.Collections.Generic.List<int> { 1, 1 },
+            cost = (1, 1),
             source = B,
             target = A
         };
