@@ -27,28 +27,33 @@ class Graph
         public SortedSet<Path> closedPathCandidates = new();
 
         // Check whether a new path to 'this' is better than any found ones. If so, forget the dominated paths.
-        public void removeDominatedPaths(Path possibleDominatingPath)
+        public void RemoveDominatedPaths(Path possibleDominatingPath)
         {
-            removeDominatedPaths(openPathCandidates, possibleDominatingPath);
-            removeDominatedPaths(closedPathCandidates, possibleDominatingPath);
+            RemoveDominatedPaths(openPathCandidates, possibleDominatingPath);
+            RemoveDominatedPaths(closedPathCandidates, possibleDominatingPath);
         }
 
         // Look for possible dominated vectors, from worst to best, and remove them from a set of paths
-        public void removeDominatedPaths(SortedSet<Path> currentPaths, Path possibleDominatingPath)
+        public static void RemoveDominatedPaths(SortedSet<Path> currentPaths, Path possibleDominatingPath)
         {
+            List<Path> pathsToRemove = new();
             bool comparisonResult;
             foreach (Path p in currentPaths.Reverse())
             {
                 comparisonResult = possibleDominatingPath.Dominates(p);
                 if (comparisonResult)
                 {
-                    currentPaths.Remove(p);
+                    pathsToRemove.Add(p);
                 }
                 else
                 {
                     break; // If the new path is dominated by p, it will also be dominated by all better paths
                     // so we can stop looking
                 }
+            }
+            foreach (Path dominatedPath in pathsToRemove)
+            {
+                currentPaths.Remove(dominatedPath);
             }
         }
     }
@@ -64,7 +69,7 @@ class Graph
     {
         public (int, int) cost;
         public Node head;
-
+        public Node previous;
 
         public bool Dominates(Path p)
         {
@@ -83,14 +88,15 @@ class Graph
     //NAMOA* algorithm
     public Path shortestPath(Node source, Node target, int distance)
     {
-        foreach (Node n in nodes)
+
+        //Initialize 
+        Path initialPath = new Path
         {
-            Path initialPath = new Path
-            {
-                cost = (0, 0)
-            };
-            openPaths.Add(initialPath);
-        }
+            cost = (0, 0),
+            head = source
+        };
+        openPaths.Add(initialPath);
+
 
         while (openPaths.Count > 0)
         {
@@ -106,7 +112,6 @@ class Graph
             }
 
         }
-
         return null;
 
     }
