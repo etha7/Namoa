@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Xml;
 using Microsoft.VisualBasic;
@@ -7,44 +9,26 @@ class Program
 {
     public static void Main()
     {
-        Graph graph = new();
-        Graph.Node A = new()
-        {
-            name = "A"
+        // Damage per tile
+        int[,] grid = {
+            {0,0},
+            {0,0},
+            {1,0},
+            {0,1}
         };
-        Graph.Node B = new()
-        {
-            name = "B"
-        };
-        Graph.Edge AtoB = new()
-        {
-            cost = new()
-            {
-                damage = 1,
-                distance = 1
-            },
-            source = A,
-            target = B
-        };
-        A.edges.Add(AtoB);
+        Graph graph = new(grid);
+        Node source = graph.nodeGrid[3, 0];
+        Node target = graph.nodeGrid[0, 0];
 
-        Graph.Edge BtoA = new()
+        graph.ShortestPathToAllNodes(source, 10);
+        Console.WriteLine(source.openPathCandidates.Min);
+        Console.WriteLine(target.openPathCandidates.Min);
+
+        Console.WriteLine("\nPrinting shortest Path from A to B");
+        List<Path> shortestPath = Graph.BacktrackShortestPath(source, target, new(), 10);
+        foreach (Path p in shortestPath)
         {
-            cost = new()
-            {
-                damage = 1,
-                distance = 1
-            },
-            source = B,
-            target = A
-        };
-        B.edges.Add(BtoA);
-
-        graph.AddNode(A);
-        graph.AddNode(B);
-
-        graph.ShortestPathToAllNodes(A, 10);
-        Console.WriteLine(B.openPathCandidates.Min);
-        Console.WriteLine(A.openPathCandidates.Min);
+            Console.WriteLine(p);
+        }
     }
 }

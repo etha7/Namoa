@@ -1,13 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Reflection.Emit;
-using System.Timers;
+using System.Linq;
+
 
 class Graph
 {
-
     HashSet<Node> nodes = new();
+    public Node[,] nodeGrid;
 
     // Costs are tuples (int damage, int distance)
     SortedSet<Path> openPaths = new();
@@ -17,125 +16,81 @@ class Graph
         nodes.Add(node);
     }
 
-    public class Node
+    public Graph(int[,] grid)
     {
+        int numRows = grid.GetLength(0);
+        int numColumns = grid.GetLength(1);
+        Node[,] nodes = new Node[numRows, numColumns];
 
-        public String name;
-        public HashSet<Edge> edges = new();
 
-        // Paths terminating in 'this' which haven't been explored
-        public SortedSet<Path> openPathCandidates = new(); //SortedSet is a Red-Black tree, which has faster deletion than PQ
-
-        // Paths terminating in 'this' which have been explored
-        public SortedSet<Path> closedPathCandidates = new();
-
-        // Check whether a new path to 'this' is better than any found ones. If so, forget the dominated paths.
-        public bool RemoveDominatedPaths(Path possibleDominatingPath)
+        // Initialize node grid with new nodes
+        for (int row = 0; row < numRows; ++row)
         {
-            return RemoveDominatedPaths(openPathCandidates, possibleDominatingPath) ||
-            RemoveDominatedPaths(closedPathCandidates, possibleDominatingPath);
-        }
-
-        // Look for possible dominated vectors, from worst to best, and remove them from a set of paths
-        // Return true if new path dominates any current paths
-        public static bool RemoveDominatedPaths(SortedSet<Path> currentPaths, Path possibleDominatingPath)
-        {
-            List<Path> pathsToRemove = new();
-            int comparisonResult;
-            foreach (Path p in currentPaths.Reverse())
+            for (int column = 0; column < numColumns; ++column)
             {
-                comparisonResult = possibleDominatingPath.Dominates(p);
-                if (comparisonResult == -1)
+                nodes[row, column] = new Node()
                 {
-                    pathsToRemove.Add(p);
-                }
-                else
+                    name = $"[{row}, {column}]"
+                };
+                this.nodes.Add(nodes[row, column]);
+            }
+        }
+        nodeGrid = nodes;
+
+        //Add edges with appropriate damage, based on input damage grid
+        for (int row = 0; row < numRows; ++row)
+        {
+            for (int column = 0; column < numColumns; ++column)
+            {
+                Node current = nodeGrid[row, column];
+                //Check all neighbors
+                for (int i = -1; i <= 1; i++)
                 {
-                    break; // If the new path is dominated by p, it will also be dominated by all better paths
-                    // so we can stop looking
-                }
-            }
-            foreach (Path dominatedPath in pathsToRemove)
-            {
-                currentPaths.Remove(dominatedPath);
+                    for (int j = -1; j <= 1; j++)
+                    {
+                        // Neighbor is in bounds of grid
+                        if (row + i < numRows && row + i >= 0 && column + j < numColumns && column + j >= 0)
+                        {
+
+                            Node neighbor = nodeGrid[row + i, column + j];
+                            Cost costToReachNeighbor;
+                            Edge edgeFromCurrentToNeighbor;
+                            // skip current node
+                            if (!(i == 0 && j == 0))
+                            {
+                                // Diagonal
+                                if (Math.Abs(i) == Math.Abs(j))
+                                {
+                                    costToReachNeighbor = new()
+                                    {
+                                        damage = grid[row + i, column + j],
+                                        distance = 2
+                                    };
+                                }
+                                else //Non Diagonal neighbor
+                                {
+                                    costToReachNeighbor = new()
+                                    {
+                                        damage = grid[row + i, column + j],
+                                        distance = 1
+                                    };
+                                }
+                                edgeFromCurrentToNeighbor = new()
+                                {
+                                    cost = costToReachNeighbor,
+                                    source = current,
+                                    target = neighbor
+                                };
+                                current.edges.Add(edgeFromCurrentToNeighbor);
+                            }
+                        }
+                    }
+                };
+
             }
 
-            // if new path dominates any paths, including the null path
-            return pathsToRemove.Count > 0 || currentPaths.Count == 0;
         }
     }
-
-    public class Edge
-    {
-        public Cost cost;
-        public Node source;
-        public Node target;
-    }
-
-    // Cost of a Path or an Edge
-    public class Cost : IComparable<Cost>
-    {
-        public int damage;
-        public int distance;
-
-        // Lexicographic ordering
-        public int CompareTo(Cost c)
-        {
-            if (damage < c.damage)
-            {
-                return -1;
-            }
-            else
-            {
-                return distance.CompareTo(c.distance);
-            }
-        }
-
-        public static Cost Add(Cost a, Cost b)
-        {
-            return new()
-            {
-                damage = a.damage + b.damage,
-                distance = a.distance + b.distance
-            };
-        }
-    }
-
-    public class Path : IComparable<Path>
-    {
-        public Cost cost;
-        public Node head;
-        public Node previous;
-
-        public int Dominates(Path p)
-        {
-            if (cost.damage < p.cost.damage && cost.distance < p.cost.distance)
-            {
-                return -1;
-            }
-            else if (cost.damage > p.cost.damage && cost.distance > p.cost.distance)
-            {
-                return 1;
-            }
-            else
-            {
-                return 0; // paths don't dominate each other
-            }
-        }
-
-        // Lexicographic ordering
-        public int CompareTo(Path p)
-        {
-            return cost.CompareTo(p.cost);
-        }
-
-        public override string ToString()
-        {
-            return $"(Damage: {cost.damage}, Distance: {cost.distance})";
-        }
-
-    }
-
     // Gets rid of path data from previous shortest path searches
     void ClearGraphPaths()
     {
@@ -154,7 +109,7 @@ class Graph
         //Initialize 
         Path initialPath = new()
         {
-            cost = new()
+            totalCost = new()
             {
                 damage = 0,
                 distance = 0
@@ -174,12 +129,13 @@ class Graph
                 Node currentTarget = e.target;
                 Path pathToTarget = new()
                 {
-                    cost = Cost.Add(currentOpenPath.cost, e.cost),
+                    totalCost = Cost.Add(currentOpenPath.totalCost, e.cost),
+                    costToPrevious = e.cost,
                     head = currentTarget,
                     previous = currentOpenPath.head
                 };
                 // We have action points left to reach new node
-                if (pathToTarget.cost.distance < maxPathLength)
+                if (pathToTarget.totalCost.distance < maxPathLength)
                 {
 
                     // Get rid of paths which the new path beats
@@ -196,4 +152,156 @@ class Graph
         }
         return null;
     }
+
+    // Only works after calling ShortestPathToAllNodes
+    public static List<Path> BacktrackShortestPath(Node source, Node target, List<Path> shortestPath, int maxDistance)
+    {
+        if (source.Equals(target))
+        {
+            return shortestPath;
+        }
+        if (shortestPath.Count == 0)
+        {
+            Path bestPath = target.openPathCandidates.Min;
+            shortestPath.Add(bestPath);
+            if (bestPath == null || bestPath.previous == null)
+            {
+                return new();
+            }
+            return BacktrackShortestPath(source, bestPath.previous, shortestPath, maxDistance - bestPath.costToPrevious.distance);
+        }
+        else
+        {
+            foreach (Path p in target.openPathCandidates)
+            {
+                if (p.totalCost.distance + shortestPath.Last().costToPrevious.distance <= maxDistance)
+                {
+                    shortestPath.Add(p);
+                    return BacktrackShortestPath(source, p.previous, shortestPath, maxDistance - p.costToPrevious.distance);
+                }
+            }
+        }
+        return new();
+    }
+}
+
+
+public class Node
+{
+
+    public string name;
+    public HashSet<Edge> edges = new();
+
+    // Paths terminating in 'this' which haven't been explored
+    public SortedSet<Path> openPathCandidates = new(); //SortedSet is a Red-Black tree, which has faster deletion than PQ
+
+    // Paths terminating in 'this' which have been explored
+    public SortedSet<Path> closedPathCandidates = new();
+
+    // Check whether a new path to 'this' is better than any found ones. If so, forget the dominated paths.
+    public bool RemoveDominatedPaths(Path possibleDominatingPath)
+    {
+        return RemoveDominatedPaths(openPathCandidates, possibleDominatingPath) ||
+        RemoveDominatedPaths(closedPathCandidates, possibleDominatingPath);
+    }
+
+    // Look for possible dominated vectors, from worst to best, and remove them from a set of paths
+    // Return true if new path dominates any current paths
+    public static bool RemoveDominatedPaths(SortedSet<Path> currentPaths, Path possibleDominatingPath)
+    {
+        List<Path> pathsToRemove = new();
+        int comparisonResult;
+        foreach (Path p in currentPaths.Reverse())
+        {
+            comparisonResult = possibleDominatingPath.Dominates(p);
+            if (comparisonResult == -1)
+            {
+                pathsToRemove.Add(p);
+            }
+            else
+            {
+                break; // If the new path is dominated by p, it will also be dominated by all better paths
+                       // so we can stop looking
+            }
+        }
+        foreach (Path dominatedPath in pathsToRemove)
+        {
+            currentPaths.Remove(dominatedPath);
+        }
+
+        // if new path dominates any paths, including the null path
+        return pathsToRemove.Count > 0 || currentPaths.Count == 0;
+    }
+}
+
+public class Edge
+{
+    public Cost cost;
+    public Node source;
+    public Node target;
+}
+
+// Cost of a Path or an Edge
+public class Cost : IComparable<Cost>
+{
+    public int damage;
+    public int distance;
+
+    // Lexicographic ordering
+    public int CompareTo(Cost c)
+    {
+        if (damage < c.damage)
+        {
+            return -1;
+        }
+        else
+        {
+            return distance.CompareTo(c.distance);
+        }
+    }
+
+    public static Cost Add(Cost a, Cost b)
+    {
+        return new()
+        {
+            damage = a.damage + b.damage,
+            distance = a.distance + b.distance
+        };
+    }
+}
+
+public class Path : IComparable<Path>
+{
+    public Cost totalCost;
+    public Cost costToPrevious;
+    public Node head;
+    public Node previous;
+
+    public int Dominates(Path p)
+    {
+        if (totalCost.damage < p.totalCost.damage && totalCost.distance < p.totalCost.distance)
+        {
+            return -1;
+        }
+        else if (totalCost.damage > p.totalCost.damage && totalCost.distance > p.totalCost.distance)
+        {
+            return 1;
+        }
+        else
+        {
+            return 0; // paths don't dominate each other
+        }
+    }
+
+    // Lexicographic ordering
+    public int CompareTo(Path p)
+    {
+        return totalCost.CompareTo(p.totalCost);
+    }
+
+    public override string ToString()
+    {
+        return $"Head: {head.name}, Previous {previous?.name}, Cost To Previous: (Damage: {costToPrevious?.damage}, Distance: {costToPrevious?.distance}) , Total Cost: (Damage: {totalCost.damage}, Distance: {totalCost.distance})";
+    }
+
 }
