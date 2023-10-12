@@ -134,7 +134,7 @@ class Graph
                     previous = currentOpenPath.head
                 };
                 // We have action points left to reach new node
-                if (pathToTarget.totalCost.distance < maxPathLength)
+                if (pathToTarget.totalCost.distance <= maxPathLength)
                 {
 
                     // Get rid of paths which the new path beats
@@ -143,7 +143,8 @@ class Graph
                     {
                         //Add new path to list of open paths we still need to investigate
                         currentTarget.openPathCandidates.Add(pathToTarget);
-                        openPaths.Add(pathToTarget);
+                        if (pathToTarget.totalCost.distance < maxPathLength)
+                            openPaths.Add(pathToTarget);
                     }
                 }
             }
@@ -182,7 +183,7 @@ class Graph
         {
             foreach (Path p in target.openPathCandidates)
             {
-                if (p.totalCost.distance + shortestPath.Last().costToPrevious.distance <= maxDistance)
+                if (p.totalCost.distance <= maxDistance)
                 {
                     shortestPath.Add(p);
                     return BacktrackShortestPath(source, p.previous, shortestPath, maxDistance - p.costToPrevious.distance);
