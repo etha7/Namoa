@@ -1,9 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Xml;
-using Microsoft.VisualBasic;
 
 class Program
 {
@@ -20,12 +16,12 @@ class Program
         Node source = graph.nodeGrid[3, 0];
         Node target = graph.nodeGrid[0, 0];
 
-        graph.ShortestPathToAllNodes(source, 10);
+        graph.ShortestPathToAllNodes(source, 3);
         Console.WriteLine(source.openPathCandidates.Min);
         Console.WriteLine(target.openPathCandidates.Min);
 
         Console.WriteLine("\nPrinting shortest Path from source to target");
-        List<Path> shortestPath = Graph.BacktrackShortestPath(source, target, new(), 10);
+        List<Path> shortestPath = Graph.BacktrackShortestPath(source, target, new(), 3);
         foreach (Path p in shortestPath)
         {
             Console.WriteLine(p);

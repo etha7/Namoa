@@ -157,6 +157,15 @@ class Graph
     {
         if (source.Equals(target))
         {
+            shortestPath.Add(new()
+            {
+                head = source,
+                totalCost = new()
+                {
+                    damage = 0,
+                    distance = 0
+                }
+            });
             return shortestPath;
         }
         if (shortestPath.Count == 0)
@@ -249,9 +258,9 @@ public class Cost : IComparable<Cost>
     // Lexicographic ordering
     public int CompareTo(Cost c)
     {
-        if (damage < c.damage)
+        if (damage != c.damage)
         {
-            return -1;
+            return damage.CompareTo(c.damage);
         }
         else
         {
