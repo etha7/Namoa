@@ -292,10 +292,23 @@ public class Path : IComparable<Path>
         }
     }
 
+    // TODO - use a sorted data structure that actually supports duplicates or
+    // Use a nonhashcode based tie breaking solution that has a 0 percent chance of colliding 
     // Lexicographic ordering
     public int CompareTo(Path p)
     {
-        return totalCost.CompareTo(p.totalCost);
+        int result = totalCost.CompareTo(p.totalCost);
+        if (result == 0)
+        {
+            // Break ties using HashCode so SortedSet doesn't treat two Paths with different head nodes as duplicates.
+            int hashResult = this.GetHashCode().CompareTo(p.GetHashCode());
+            if (hashResult == 0)
+            {
+                // If we tie again (1 in trillion chance), take a second 1 in trillion chance
+                return this.head.GetHashCode().CompareTo(p.head.GetHashCode());
+            }
+        }
+        return result;
     }
 
     public override string ToString()
